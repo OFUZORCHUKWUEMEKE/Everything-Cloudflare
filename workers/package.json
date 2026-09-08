@@ -1,0 +1,36 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers backend API with Hono, D1, OTP auth, and forgot password",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "build": "wrangler build",
+    "deploy": "wrangler deploy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cloudflare-workers",
+    "hono",
+    "d1",
+    "api",
+    "authentication",
+    "otp"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260908.1",
+    "@types/node": "^26.5.0",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.129.1"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "hono": "^4.13.7",
+    "jose": "^6.2.12",
+    "resend": "^6.26.0",
+    "zod": "^4.5.4"
+  }
+}

@@ -1,0 +1,26 @@
+name = "backend"
+main = "src/index.ts"
+compatibility_date = "2026-09-08"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "backend"
+database_id = "local"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "local"
+preview_id = "local"
+
+[[queues.producers]]
+binding = "EMAIL_QUEUE"
+
+[[queues.consumers]]
+queue = "email-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "email-queue-dlq"
+
+[triggers]
+crons = ["0 0 * * *"]
