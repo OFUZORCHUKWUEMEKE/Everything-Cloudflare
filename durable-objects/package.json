@@ -1,0 +1,20 @@
+{
+  "name": "durable-objects",
+  "version": "1.0.0",
+  "description": "Real-time Chat Room using Cloudflare Durable Objects",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "build": "wrangler build",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "hono": "^4.13.7",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.129.1"
+  },
+  "dependencies": {
+    "zod": "^4.5.4"
+  }
+}
