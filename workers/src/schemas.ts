@@ -61,3 +61,11 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 export type CreateItemInput = z.infer<typeof createItemSchema>;
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
+
+// Image upload schema (validates content-type header)
+export const imageUploadSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+  size: z.number().max(10 * 1024 * 1024, "Image must be under 10MB"),
+});
+
+export type ImageUploadInput = z.infer<typeof imageUploadSchema>;

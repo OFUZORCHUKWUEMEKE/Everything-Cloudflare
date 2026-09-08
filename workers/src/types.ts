@@ -2,6 +2,7 @@ export interface Env {
   DB: D1Database;
   RATE_LIMIT_KV: KVNamespace;
   EMAIL_QUEUE: Queue;
+  R2_BUCKET: R2Bucket;
   JWT_SECRET?: string;
   RESEND_API_KEY?: string;
 }
@@ -44,4 +45,11 @@ export interface EmailQueueMessage {
   subject: string;
   code: string;
   purpose: "login" | "password_reset" | "email_verification";
+}
+
+// Image upload types
+export interface ItemImage {
+  itemId: string;
+  imageUrl: string;
+  uploadedAt: string;
 }

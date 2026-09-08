@@ -1,0 +1,21 @@
+{
+  "name": "intake-agent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.129.0"
+  },
+  "dependencies": {
+    "agents": "^0.22.0"
+  }
+}

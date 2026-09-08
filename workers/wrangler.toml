@@ -24,3 +24,7 @@ dead_letter_queue = "email-queue-dlq"
 
 [triggers]
 crons = ["0 0 * * *"]
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "item-images"

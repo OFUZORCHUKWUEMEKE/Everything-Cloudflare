@@ -64,8 +64,7 @@ export async function emailQueue(batch: MessageBatch<EmailQueueMessage>, env: En
       console.log(`Email sent to ${to} (${purpose})`);
     } catch (error) {
       console.error("Email queue error:", error);
-      // Nack message so it retries (Cloudflare will retry up to max_retries)
-      message.nack();
+      // Don't ack - message will be retried (up to max_retries in wrangler.toml)
     }
   }
 }
