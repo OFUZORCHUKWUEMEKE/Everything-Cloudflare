@@ -27,6 +27,23 @@ app.get("/health", (c) => {
   return c.json({ status: "ok" });
 });
 
+// WebSocket endpoint
+app.get("/rooms/:roomId/ws", async (c) => {
+  const roomId = c.req.param("roomId");
+
+  try {
+    const id = c.env.CHAT_ROOM.idFromName(roomId);
+    const stub = c.env.CHAT_ROOM.get(id);
+
+    const response = await stub.fetch("https://chat/ws");
+
+    return response;
+  } catch (error) {
+    console.error("WebSocket error:", error);
+    return c.json({ error: "Failed to connect to room" }, 500);
+  }
+});
+
 // Get room state (messages, users, stats)
 app.get("/rooms/:roomId", async (c) => {
   const roomId = c.req.param("roomId");

@@ -10,35 +10,51 @@ Real-time chat application using Cloudflare Durable Objects.
 
 ## Project Phases
 
-### Phase 1: Basic ChatRoom ✅ (Current)
+### Phase 1: Basic ChatRoom ✅
 - [x] Durable Object class structure
 - [x] Message storage (100 message limit)
 - [x] User tracking (add/remove)
 - [x] REST API endpoints
-- [ ] Test with curl
 
-**API Endpoints:**
+**REST API Endpoints:**
 ```bash
 # Get room state
 GET /rooms/:roomId
 
-# Add message
+# Add message (REST)
 POST /rooms/:roomId/messages
 { "user": "Alice", "text": "Hello!" }
 
-# User joins
+# User joins (REST)
 POST /rooms/:roomId/users
 { "user": "Bob" }
 
-# User leaves
+# User leaves (REST)
 DELETE /rooms/:roomId/users/:user
 ```
 
-### Phase 2: WebSocket Support (Next)
-- [ ] WebSocket proxy in Worker
-- [ ] Real-time message broadcast
-- [ ] User presence updates
-- [ ] Connection management
+### Phase 2: WebSocket Support ✅ (Current)
+- [x] WebSocket proxy in Worker
+- [x] Real-time message broadcast
+- [x] User presence updates (join/leave)
+- [x] Connection management
+- [x] HTML test client
+
+**WebSocket Endpoint:**
+```bash
+# Connect to room
+ws://localhost:8787/rooms/:roomId/ws
+
+# Messages over WebSocket
+{ "type": "message", "user": "Alice", "text": "Hello!" }
+{ "type": "join", "user": "Bob" }
+{ "type": "leave", "user": "Bob" }
+```
+
+**Real-time Events:**
+- `message` - New message in room
+- `user-joined` - User connected
+- `user-left` - User disconnected
 
 ### Phase 3: Frontend UI (After)
 - [ ] HTML/CSS interface
@@ -64,12 +80,36 @@ npm install
 # Development
 npm run dev
 
-# Test endpoints with curl
+# Open test client
+open test-client.html
+```
+
+## Testing
+
+### Phase 1: REST API (curl)
+```bash
+# Get room state
+curl http://localhost:8787/rooms/general
+
+# Add message
 curl http://localhost:8787/rooms/general/messages \
   -X POST \
   -H "Content-Type: application/json" \
   -d '{"user":"Alice","text":"Hello!"}'
+
+# User join
+curl http://localhost:8787/rooms/general/users \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"user":"Bob"}'
 ```
+
+### Phase 2: WebSocket (Real-time)
+1. Open `test-client.html` in browser
+2. Enter room name and your name
+3. Click "Connect"
+4. Open same test client in another tab with different name
+5. Send messages - see them broadcast in real-time!
 
 ## Key Concepts to Learn
 

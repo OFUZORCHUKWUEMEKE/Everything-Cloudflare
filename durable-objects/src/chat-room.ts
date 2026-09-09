@@ -1,5 +1,5 @@
-// Phase 1: Basic ChatRoom Durable Object
-// Features: Store messages, add/remove users, get room state
+// Phase 2: ChatRoom with WebSocket
+// Features: Store messages, add/remove users, get room state, real-time WebSocket
 
 export interface Message {
   id: string;
@@ -14,10 +14,16 @@ export interface RoomState {
   lastMessage: Message | null;
 }
 
+export interface WSMessage {
+  type: "message" | "user-joined" | "user-left" | "state";
+  data: any;
+}
+
 export class ChatRoom {
   state: DurableObjectState;
   messages: Message[] = [];
   users: Set<string> = new Set();
+  connections: Set<WebSocket> = new Set();
 
   constructor(state: DurableObjectState) {
     this.state = state;
@@ -38,6 +44,11 @@ export class ChatRoom {
     const pathname = url.pathname;
 
     try {
+      // WebSocket upgrade
+      if (pathname === "/ws" && request.method === "GET") {
+        return this.handleWebSocket(request);
+      }
+
       if (pathname === "/state" && request.method === "GET") {
         return this.handleGetState();
       }
@@ -64,6 +75,74 @@ export class ChatRoom {
     }
   }
 
+  // Handle WebSocket upgrade
+  private handleWebSocket(request: Request): Response {
+    const [client, server] = new WebSocketPair();
+
+    this.connections.add(server);
+
+    // Handle incoming messages from client
+    server.addEventListener("message", async (event) => {
+      try {
+        const msg = JSON.parse(event.data as string);
+
+        if (msg.type === "message" && msg.user && msg.text) {
+          const message = await this.addMessage(msg.user, msg.text);
+
+          // Broadcast to all connected clients
+          this.broadcast({
+            type: "message",
+            data: message,
+          });
+        }
+
+        if (msg.type === "join" && msg.user) {
+          this.addUser(msg.user);
+
+          // Notify all clients
+          this.broadcast({
+            type: "user-joined",
+            data: { user: msg.user, users: Array.from(this.users) },
+          });
+        }
+
+        if (msg.type === "leave" && msg.user) {
+          this.removeUser(msg.user);
+
+          // Notify all clients
+          this.broadcast({
+            type: "user-left",
+            data: { user: msg.user, users: Array.from(this.users) },
+          });
+        }
+      } catch (error) {
+        console.error("WebSocket message error:", error);
+        server.send(JSON.stringify({ type: "error", data: "Invalid message" }));
+      }
+    });
+
+    // Handle client disconnect
+    server.addEventListener("close", () => {
+      this.connections.delete(server);
+    });
+
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  // Broadcast message to all connected clients
+  private broadcast(message: WSMessage) {
+    const payload = JSON.stringify(message);
+
+    for (const client of this.connections) {
+      try {
+        client.send(payload);
+      } catch (error) {
+        console.error("Broadcast error:", error);
+        this.connections.delete(client);
+      }
+    }
+  }
+
   private handleGetState(): Response {
     const state = this.getState();
     return new Response(JSON.stringify(state), {
@@ -73,6 +152,13 @@ export class ChatRoom {
 
   private async handleAddMessage(user: string, text: string): Promise<Response> {
     const message = await this.addMessage(user, text);
+
+    // Also broadcast via WebSocket
+    this.broadcast({
+      type: "message",
+      data: message,
+    });
+
     return new Response(JSON.stringify({ message }), {
       status: 201,
       headers: { "Content-Type": "application/json" },
@@ -81,6 +167,13 @@ export class ChatRoom {
 
   private handleAddUser(user: string): Response {
     this.addUser(user);
+
+    // Broadcast via WebSocket
+    this.broadcast({
+      type: "user-joined",
+      data: { user, users: Array.from(this.users) },
+    });
+
     return new Response(JSON.stringify({ message: "User added", users: Array.from(this.users) }), {
       headers: { "Content-Type": "application/json" },
     });
@@ -88,6 +181,13 @@ export class ChatRoom {
 
   private handleRemoveUser(user: string): Response {
     this.removeUser(user);
+
+    // Broadcast via WebSocket
+    this.broadcast({
+      type: "user-left",
+      data: { user, users: Array.from(this.users) },
+    });
+
     return new Response(JSON.stringify({ message: "User removed", users: Array.from(this.users) }), {
       headers: { "Content-Type": "application/json" },
     });
