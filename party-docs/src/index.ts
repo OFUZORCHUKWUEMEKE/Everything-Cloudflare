@@ -28,15 +28,20 @@ app.get('/', (c) => {
 
 app.get('/api/docs/:docId/ws', async (c) => {
   const docId = c.req.param('docId');
-  const userId = c.req.query('userId') || `user-${Date.now()}`;
-  const userName = c.req.query('userName') || 'Guest';
 
-  const stub = c.env.DOCUMENT.get(docId);
-  const url = new URL(`https://document/ws?userId=${userId}&userName=${userName}`);
+  try {
+    const stub = c.env.DOCUMENT.get(docId);
 
-  return stub.fetch(new Request(url, {
-    headers: c.req.raw.headers,
-  }));
+    const upgradeHeader = c.req.header('Upgrade')?.toLowerCase();
+    if (upgradeHeader !== 'websocket') {
+      return c.text('Expected Upgrade: websocket', 400);
+    }
+
+    return await stub.fetch(c.req.raw);
+  } catch (e) {
+    console.error('WebSocket upgrade error:', e);
+    return c.text('WebSocket upgrade failed', 500);
+  }
 });
 
 app.get('/api/docs/:docId/sync', async (c) => {
