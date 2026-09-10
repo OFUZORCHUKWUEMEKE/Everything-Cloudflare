@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudChat - Real-Time Chat</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5568d3;
+      --secondary: #764ba2;
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --text-primary: #2d3748;
+      --text-secondary: #718096;
+      --border: #e2e8f0;
+      --success: #48bb78;
+      --error: #f56565;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+      --shadow-lg: 0 20px 60px rgba(0,0,0,0.15);
+    }
+
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* ============== LAYOUT ============== */
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ============== WELCOME SCREEN ============== */
+    .welcome-screen {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .welcome-content {
+      text-align: center;
+      color: white;
+      max-width: 500px;
+      padding: 40px;
+    }
+
+    .welcome-content h1 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+
+    .welcome-content p {
+      font-size: 18px;
+      opacity: 0.9;
+      margin-bottom: 48px;
+      line-height: 1.6;
+    }
+
+    .welcome-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    .form-group input {
+      padding: 14px 16px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 16px;
+      font-family: inherit;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s;
+    }
+
+    .form-group input::placeholder {
+      color: rgba(255,255,255,0.6);
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.1);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: white;
+      color: var(--primary);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* ============== CHAT SCREEN ============== */
+    .chat-screen {
+      flex-direction: row;
+    }
+
+    .sidebar {
+      width: 320px;
+      background: var(--bg-primary);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .room-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .room-item {
+      padding: 12px;
+      margin-bottom: 8px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .room-item:hover {
+      background: #e6eef5;
+    }
+
+    .room-item.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .room-item-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .room-item-info {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .room-item.active .room-item-info {
+      opacity: 0.9;
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-logout {
+      width: 100%;
+      background: var(--error);
+      color: white;
+    }
+
+    .btn-logout:hover:not(:disabled) {
+      background: #d93d3d;
+      transform: translateY(-2px);
+    }
+
+    /* ============== CHAT AREA ============== */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+    }
+
+    .chat-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chat-header-left h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .online-count {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .online-count-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+    }
+
+    .user-list-btn {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .user-list-btn:hover {
+      background: #e2e8f0;
+    }
+
+    /* ============== MESSAGES ============== */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .messages.empty {
+      justify-content: center;
+      align-items: center;
+      color: var(--text-secondary);
+      font-size: 16px;
+    }
+
+    .message-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .message-sender {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+      padding: 0 12px;
+    }
+
+    .message {
+      display: flex;
+      max-width: 70%;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.own {
+      justify-content: flex-end;
+    }
+
+    .message.system {
+      justify-content: center;
+      max-width: 100%;
+    }
+
+    .message-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      font-size: 14px;
+    }
+
+    .message.other .message-bubble {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.own .message-bubble {
+      background: var(--primary);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.system .message-bubble {
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      padding: 0 12px;
+    }
+
+    /* ============== INPUT ============== */
+    .input-area {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-primary);
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 12px;
+    }
+
+    .input-wrapper input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--bg-secondary);
+      transition: all 0.2s;
+    }
+
+    .input-wrapper input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: var(--bg-primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .input-wrapper input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .btn-send {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+
+    .btn-send:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: scale(1.05);
+    }
+
+    /* ============== USER LIST MODAL ============== */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-primary);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: var(--shadow-lg);
+      animation: popIn 0.3s ease-out;
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .modal-header {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .users-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .user-item {
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-item-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .user-item-name {
+      font-weight: 600;
+      flex: 1;
+    }
+
+    /* ============== SCROLLBAR ============== */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e0;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a0aec0;
+    }
+
+    /* ============== RESPONSIVE ============== */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 280px;
+      }
+
+      .message {
+        max-width: 85%;
+      }
+
+      .welcome-content {
+        padding: 24px;
+      }
+
+      .welcome-content h1 {
+        font-size: 36px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .app {
+        flex-direction: column;
+      }
+
+      .chat-screen {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        max-height: 200px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .room-list {
+        max-height: 150px;
+        overflow-x: auto;
+        display: flex;
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .room-item {
+        flex-shrink: 0;
+        min-width: 120px;
+      }
+
+      .message {
+        max-width: 95%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Welcome Screen -->
+    <div class="screen welcome-screen active">
+      <div class="welcome-content">
+        <h1>☁️ CloudChat</h1>
+        <p>Real-time chat powered by Cloudflare Durable Objects</p>
+
+        <form class="welcome-form" onsubmit="handleJoin(event)">
+          <div class="form-group">
+            <label for="roomInput">Room</label>
+            <input
+              type="text"
+              id="roomInput"
+              placeholder="e.g., general, random, tech"
+              value="general"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="userInput">Your Name</label>
+            <input
+              type="text"
+              id="userInput"
+              placeholder="e.g., Alice, Bob, Charlie"
+              required
+            >
+          </div>
+
+          <button type="submit" class="btn btn-primary">Join Room</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Chat Screen -->
+    <div class="screen chat-screen">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <h2>CloudChat</h2>
+          <div class="user-badge">
+            <div class="status-dot"></div>
+            <span id="currentUser">You</span>
+          </div>
+        </div>
+
+        <div class="room-list" id="roomList"></div>
+
+        <div class="sidebar-footer">
+          <button class="btn user-list-btn" id="userListBtn" style="width: 100%; margin-bottom: 12px;">
+            👥 Users (<span id="userCount">0</span>)
+          </button>
+          <button class="btn btn-logout" onclick="handleLogout()">Logout</button>
+        </div>
+      </div>
+
+      <!-- Chat Area -->
+      <div class="chat-area">
+        <div class="chat-header">
+          <div class="chat-header-left">
+            <h3 id="chatRoomName">general</h3>
+            <div class="online-count">
+              <div class="online-count-dot"></div>
+              <span id="onlineCount">0 online</span>
+            </div>
+          </div>
+          <button class="btn user-list-btn" id="userListBtnHeader" style="display: none;">
+            👥 Users (<span id="userCountHeader">0</span>)
+          </button>
+        </div>
+
+        <div class="messages empty" id="messages">
+          <span>No messages yet. Start the conversation!</span>
+        </div>
+
+        <div class="input-area">
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="messageInput"
+              placeholder="Type a message..."
+              disabled
+            >
+            <button class="btn btn-send" id="sendBtn" disabled>➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User List Modal -->
+  <div class="modal" id="userModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span>Active Users</span>
+        <button class="modal-close" onclick="closeUserModal()">✕</button>
+      </div>
+      <div class="users-list" id="usersList"></div>
+    </div>
+  </div>
+
+  <script>
+    // ============== STATE ==============
+    let state = {
+      ws: null,
+      currentRoom: 'general',
+      currentUser: '',
+      users: [],
+      messages: [],
+      rooms: new Set(['general', 'random', 'tech', 'design', 'support']),
+    };
+
+    // ============== UI HELPERS ==============
+    function showScreen(screenClass) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelector('.' + screenClass).classList.add('active');
+    }
+
+    function formatTime(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ============== WELCOME SCREEN ==============
+    function handleJoin(e) {
+      e.preventDefault();
+      const room = document.getElementById('roomInput').value.trim();
+      const user = document.getElementById('userInput').value.trim();
+
+      if (!room || !user) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      state.currentRoom = room;
+      state.currentUser = user;
+
+      document.getElementById('currentUser').textContent = user;
+      document.getElementById('chatRoomName').textContent = `# ${room}`;
+
+      renderRooms();
+      showScreen('chat-screen');
+      connectWebSocket();
+      focusMessageInput();
+    }
+
+    // ============== WEBSOCKET ==============
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host || 'localhost:8788';
+      const wsUrl = `${protocol}//${host}/rooms/${state.currentRoom}/ws`;
+
+      state.ws = new WebSocket(wsUrl);
+
+      state.ws.onopen = () => {
+        console.log('✅ Connected to room:', state.currentRoom);
+        state.ws.send(JSON.stringify({ type: 'join', user: state.currentUser }));
+        document.getElementById('messageInput').disabled = false;
+        document.getElementById('sendBtn').disabled = false;
+      };
+
+      state.ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === 'message') {
+          handleMessageReceived(msg.data);
+        } else if (msg.type === 'user-joined') {
+          state.users = msg.data.users;
+          addSystemMessage(`${msg.data.user} joined the room`);
+          updateUserCount();
+        } else if (msg.type === 'user-left') {
+          state.users = msg.data.users;
+          addSystemMessage(`${msg.data.user} left the room`);
+          updateUserCount();
+        }
+      };
+
+      state.ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        addSystemMessage('Connection error');
+      };
+
+      state.ws.onclose = () => {
+        console.log('Connection closed');
+        document.getElementById('messageInput').disabled = true;
+        document.getElementById('sendBtn').disabled = true;
+      };
+    }
+
+    // ============== MESSAGES ==============
+    function handleMessageReceived(message) {
+      state.messages.push(message);
+      renderMessages();
+    }
+
+    function addSystemMessage(text) {
+      state.messages.push({
+        type: 'system',
+        text: text,
+        timestamp: Date.now(),
+      });
+      renderMessages();
+    }
+
+    function renderMessages() {
+      const messagesEl = document.getElementById('messages');
+
+      if (state.messages.length === 0) {
+        messagesEl.innerHTML = '<span>No messages yet. Start the conversation!</span>';
+        messagesEl.classList.add('empty');
+        return;
+      }
+
+      messagesEl.classList.remove('empty');
+      messagesEl.innerHTML = '';
+
+      state.messages.forEach((msg, idx) => {
+        if (msg.type === 'system') {
+          const messageEl = document.createElement('div');
+          messageEl.className = 'message system';
+          messageEl.innerHTML = `<div class="message-bubble">${msg.text}</div>`;
+          messagesEl.appendChild(messageEl);
+          return;
+        }
+
+        const isOwn = msg.user === state.currentUser;
+        const messageClass = isOwn ? 'message own' : 'message other';
+
+        const messageEl = document.createElement('div');
+        messageEl.className = messageClass;
+
+        if (!isOwn && (idx === 0 || state.messages[idx - 1].user !== msg.user)) {
+          const senderEl = document.createElement('div');
+          senderEl.className = 'message-sender';
+          senderEl.textContent = msg.user;
+          messagesEl.appendChild(senderEl);
+        }
+
+        messageEl.innerHTML = `
+          <div class="message-bubble">${escapeHtml(msg.text)}</div>
+          <div class="message-time">${formatTime(msg.timestamp)}</div>
+        `;
+
+        messagesEl.appendChild(messageEl);
+      });
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+
+      if (!text || !state.ws || state.ws.readyState !== WebSocket.OPEN) return;
+
+      state.ws.send(JSON.stringify({
+        type: 'message',
+        user: state.currentUser,
+        text: text,
+      }));
+
+      input.value = '';
+      input.focus();
+    }
+
+    function focusMessageInput() {
+      document.getElementById('messageInput').focus();
+    }
+
+    // ============== ROOMS ==============
+    function renderRooms() {
+      const roomList = document.getElementById('roomList');
+      roomList.innerHTML = '';
+
+      const sortedRooms = Array.from(state.rooms).sort();
+
+      sortedRooms.forEach(room => {
+        const roomEl = document.createElement('div');
+        roomEl.className = 'room-item' + (room === state.currentRoom ? ' active' : '');
+        roomEl.innerHTML = `
+          <div class="room-item-name"># ${room}</div>
+          <div class="room-item-info">Join to chat</div>
+        `;
+        roomEl.onclick = () => switchRoom(room);
+        roomList.appendChild(roomEl);
+      });
+    }
+
+    function switchRoom(room) {
+      if (state.ws) {
+        state.ws.close();
+      }
+
+      state.currentRoom = room;
+      state.users = [];
+      state.messages = [];
+
+      document.getElementById('chatRoomName').textContent = `# ${room}`;
+      renderRooms();
+      renderMessages();
+      connectWebSocket();
+    }
+
+    // ============== USERS ==============
+    function updateUserCount() {
+      document.getElementById('userCount').textContent = state.users.length;
+      document.getElementById('userCountHeader').textContent = state.users.length;
+      document.getElementById('onlineCount').textContent = `${state.users.length} online`;
+
+      renderUsersList();
+    }
+
+    function renderUsersList() {
+      const usersList = document.getElementById('usersList');
+      usersList.innerHTML = '';
+
+      if (state.users.length === 0) {
+        usersList.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-secondary);">No users yet</div>';
+        return;
+      }
+
+      state.users.forEach(user => {
+        const userEl = document.createElement('div');
+        userEl.className = 'user-item';
+        const isYou = user === state.currentUser;
+        userEl.innerHTML = `
+          <div class="user-item-dot"></div>
+          <div class="user-item-name">${user}${isYou ? ' (you)' : ''}</div>
+        `;
+        usersList.appendChild(userEl);
+      });
+    }
+
+    function showUserModal() {
+      document.getElementById('userModal').classList.add('active');
+    }
+
+    function closeUserModal() {
+      document.getElementById('userModal').classList.remove('active');
+    }
+
+    // ============== LOGOUT ==============
+    function handleLogout() {
+      if (state.ws) {
+        state.ws.close();
+      }
+
+      state = {
+        ws: null,
+        currentRoom: 'general',
+        currentUser: '',
+        users: [],
+        messages: [],
+        rooms: new Set(['general', 'random', 'tech', 'design', 'support']),
+      };
+
+      document.getElementById('roomInput').value = 'general';
+      document.getElementById('userInput').value = '';
+      showScreen('welcome-screen');
+      document.getElementById('userInput').focus();
+    }
+
+    // ============== EVENT LISTENERS ==============
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
+    document.getElementById('userListBtn').addEventListener('click', showUserModal);
+    document.getElementById('userListBtnHeader').addEventListener('click', showUserModal);
+
+    document.getElementById('userModal').addEventListener('click', (e) => {
+      if (e.target.id === 'userModal') closeUserModal();
+    });
+
+    // ============== UTILITIES ==============
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ============== INIT ==============
+    document.getElementById('userInput').focus();
+  </script>
+</body>
+</html>
