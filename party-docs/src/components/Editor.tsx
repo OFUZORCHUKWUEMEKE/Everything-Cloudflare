@@ -15,10 +15,13 @@ interface EditorProps {
   onCursorChange: (position: number) => void;
 }
 
+const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2']
+
 export default function Editor({ content, cursor, users, onChange, onCursorChange }: EditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [localCursor, setLocalCursor] = useState(0)
+  const lineCount = content.split('\n').length
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value
@@ -121,47 +124,173 @@ export default function Editor({ content, cursor, users, onChange, onCursorChang
         flexDirection: 'column',
         overflow: 'hidden',
         backgroundColor: 'white',
+        position: 'relative',
       }}
     >
       <style>{`
         @keyframes blink {
           0%, 49% { opacity: 1; }
-          50%, 100% { opacity: 0; }
+          50%, 100% { opacity: 0.3; }
+        }
+
+        .editor-container::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .editor-container::-webkit-scrollbar-track {
+          background: #f5f5f5;
+        }
+
+        .editor-container::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 4px;
+        }
+
+        .editor-container::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
         }
       `}</style>
 
-      <textarea
-        ref={textareaRef}
-        value={content}
-        onChange={handleChange}
-        onClick={handleClick}
-        onKeyUp={handleKeyUp}
-        placeholder="Start typing to edit the document..."
-        style={{
-          flex: 1,
-          padding: '20px',
-          fontSize: '14px',
-          fontFamily: '"Courier New", monospace',
-          border: 'none',
-          outline: 'none',
-          resize: 'none',
-          backgroundColor: 'white',
-          color: '#333',
+      {/* Editor Wrapper */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+        {/* Line numbers */}
+        <div style={{
+          width: '50px',
+          padding: '20px 12px',
+          backgroundColor: '#f8f9fa',
+          borderRight: '1px solid #e9ecef',
+          color: '#999',
+          fontSize: '13px',
           lineHeight: '1.5',
-        }}
-      />
+          userSelect: 'none',
+          fontFamily: '"Fira Code", "Courier New", monospace',
+          overflowY: 'hidden',
+          textAlign: 'right',
+        }}>
+          {Array.from({ length: lineCount }, (_, i) => (
+            <div key={i + 1} style={{ height: '21px', margin: 0 }}>{i + 1}</div>
+          ))}
+        </div>
 
-      {/* Word count footer */}
+        {/* Textarea and collaborative cursors */}
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={handleChange}
+            onClick={handleClick}
+            onKeyUp={handleKeyUp}
+            placeholder="✍️  Start typing to edit the document..."
+            className="editor-container"
+            style={{
+              flex: 1,
+              width: '100%',
+              height: '100%',
+              padding: '20px',
+              fontSize: '14px',
+              fontFamily: '"Fira Code", "Courier New", monospace',
+              border: 'none',
+              outline: 'none',
+              resize: 'none',
+              backgroundColor: 'white',
+              color: '#2c3e50',
+              lineHeight: '1.5',
+              position: 'relative',
+              zIndex: 2,
+            }}
+          />
+
+          {/* Collaborative cursors overlay */}
+          <div style={{ position: 'absolute', top: 0, left: 50, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 1 }}>
+            {users.map((user) => {
+              const lines = content.substring(0, user.cursor).split('\n')
+              const row = lines.length - 1
+              const col = lines[lines.length - 1].length
+
+              return (
+                <div key={user.userId} style={{ position: 'relative' }}>
+                  {/* Cursor line */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: `${col * 8.4}px`,
+                      top: `${20 + row * 21}px`,
+                      width: '2px',
+                      height: '21px',
+                      backgroundColor: user.color,
+                      animation: 'blink 1s infinite',
+                      zIndex: 10,
+                      boxShadow: `0 0 8px ${user.color}40`,
+                    }}
+                  />
+                  {/* Name label */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: `${col * 8.4 - 20}px`,
+                      top: `${20 + row * 21 - 22}px`,
+                      backgroundColor: user.color,
+                      color: 'white',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      zIndex: 11,
+                      boxShadow: `0 2px 8px ${user.color}50`,
+                    }}
+                  >
+                    {user.name}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats footer */}
       <div
         style={{
-          padding: '8px 20px',
-          borderTop: '1px solid #e0e0e0',
+          padding: '12px 20px',
+          borderTop: '1px solid #e9ecef',
           fontSize: '12px',
-          color: '#666',
-          backgroundColor: '#f5f5f5',
+          color: '#7f8c8d',
+          backgroundColor: '#f8f9fa',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        Words: {content.split(/\s+/).filter(Boolean).length} • Characters: {content.length}
+        <div style={{ display: 'flex', gap: '24px' }}>
+          <span>📊 Words: <strong>{content.split(/\s+/).filter(Boolean).length}</strong></span>
+          <span>🔤 Characters: <strong>{content.length}</strong></span>
+          <span>📝 Lines: <strong>{lineCount}</strong></span>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {users.length > 0 && (
+            <>
+              <span>👥 Editing with:</span>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {users.map((user) => (
+                  <div
+                    key={user.userId}
+                    style={{
+                      display: 'inline-block',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      backgroundColor: user.color,
+                      border: '2px solid white',
+                      boxShadow: `0 0 4px ${user.color}50`,
+                    }}
+                    title={user.name}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
