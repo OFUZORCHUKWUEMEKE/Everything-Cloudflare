@@ -20,13 +20,15 @@ export default function Leaderboard({ players, loading, playerStats }: Leaderboa
   if (loading) {
     return (
       <div style={{
-        background: 'white',
+        background: 'var(--color-bg)',
         borderRadius: '12px',
         padding: '32px',
         textAlign: 'center',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 8px 32px var(--color-shadow)',
       }}>
-        <p style={{ margin: 0, color: '#999', fontSize: '14px' }}>Loading leaderboard...</p>
+        <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '14px' }}>
+          ⏳ Loading leaderboard...
+        </p>
       </div>
     )
   }
@@ -34,13 +36,15 @@ export default function Leaderboard({ players, loading, playerStats }: Leaderboa
   if (players.length === 0) {
     return (
       <div style={{
-        background: 'white',
+        background: 'var(--color-bg)',
         borderRadius: '12px',
         padding: '32px',
         textAlign: 'center',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 8px 32px var(--color-shadow)',
       }}>
-        <p style={{ margin: 0, color: '#999', fontSize: '14px' }}>No players yet. Be the first!</p>
+        <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: '14px' }}>
+          No players yet. Be the first! 🚀
+        </p>
       </div>
     )
   }
@@ -48,34 +52,62 @@ export default function Leaderboard({ players, loading, playerStats }: Leaderboa
   return (
     <>
       <div style={{
-        background: 'white',
+        background: 'var(--color-bg)',
         borderRadius: '12px',
         overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 8px 32px var(--color-shadow)',
       }}>
         <div style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
-          padding: '20px 24px',
+          padding: 'clamp(16px, 4vw, 20px)',
         }}>
-          <h2 style={{ margin: 0, fontSize: '20px' }}>🏆 Top Players</h2>
+          <h2 style={{ margin: 0, fontSize: 'clamp(18px, 4vw, 20px)' }}>🏆 Top Players</h2>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
-            fontSize: '14px',
+            fontSize: 'clamp(12px, 2vw, 14px)',
           }}>
             <thead>
               <tr style={{
-                background: '#f5f5f5',
-                borderBottom: '1px solid #e0e0e0',
+                background: 'var(--color-bg-secondary)',
+                borderBottom: `1px solid var(--color-border)`,
               }}>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#333' }}>Rank</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#333' }}>Player</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#333' }}>Score</th>
-                <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, color: '#333' }}>View</th>
+                <th style={{ 
+                  padding: '12px 16px', 
+                  textAlign: 'left', 
+                  fontWeight: 600, 
+                  color: 'var(--color-text)',
+                }}>
+                  Rank
+                </th>
+                <th style={{ 
+                  padding: '12px 16px', 
+                  textAlign: 'left', 
+                  fontWeight: 600, 
+                  color: 'var(--color-text)',
+                }}>
+                  Player
+                </th>
+                <th style={{ 
+                  padding: '12px 16px', 
+                  textAlign: 'right', 
+                  fontWeight: 600, 
+                  color: 'var(--color-text)',
+                }}>
+                  Score
+                </th>
+                <th style={{ 
+                  padding: '12px 16px', 
+                  textAlign: 'center', 
+                  fontWeight: 600, 
+                  color: 'var(--color-text)',
+                }}>
+                  View
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -83,25 +115,43 @@ export default function Leaderboard({ players, loading, playerStats }: Leaderboa
                 <tr
                   key={player.playerId}
                   style={{
-                    borderBottom: '1px solid #e0e0e0',
-                    background: playerStats?.playerId === player.playerId ? '#f9f9ff' : 'white',
+                    borderBottom: `1px solid var(--color-border)`,
+                    background: playerStats?.playerId === player.playerId 
+                      ? 'var(--color-bg-secondary)' 
+                      : 'var(--color-bg)',
                     transition: 'background-color 0.2s',
                   }}
                 >
-                  <td style={{ padding: '12px 16px', color: '#667eea', fontWeight: 700 }}>
+                  <td style={{ 
+                    padding: '12px 16px', 
+                    color: 'var(--color-primary)', 
+                    fontWeight: 700,
+                    fontSize: 'clamp(12px, 2vw, 15px)',
+                  }}>
                     {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : `#${player.rank}`}
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#333', fontWeight: 500 }}>
+                  <td style={{ 
+                    padding: '12px 16px', 
+                    color: 'var(--color-text)', 
+                    fontWeight: 500,
+                    wordBreak: 'break-word',
+                  }}>
                     {player.playerName}
                   </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', color: '#667eea', fontWeight: 700, fontSize: '15px' }}>
+                  <td style={{ 
+                    padding: '12px 16px', 
+                    textAlign: 'right', 
+                    color: 'var(--color-primary)', 
+                    fontWeight: 700,
+                    fontSize: 'clamp(12px, 2vw, 15px)',
+                  }}>
                     {player.score.toLocaleString()}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                     <button
                       onClick={() => setSelectedPlayerId(player.playerId)}
                       style={{
-                        background: '#667eea',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         color: 'white',
                         border: 'none',
                         padding: '6px 12px',
@@ -109,9 +159,14 @@ export default function Leaderboard({ players, loading, playerStats }: Leaderboa
                         fontSize: '12px',
                         fontWeight: 600,
                         cursor: 'pointer',
+                        transition: 'transform 0.2s',
+                        minHeight: '32px',
+                        minWidth: '32px',
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                     >
-                      Profile
+                      👤
                     </button>
                   </td>
                 </tr>

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTheme } from './ThemeContext'
 import Leaderboard from './components/Leaderboard'
 import ScoreForm from './components/ScoreForm'
+import ArchivedLeaderboards from './components/ArchivedLeaderboards'
 
 interface PlayerScore {
   playerId: string;
@@ -16,6 +18,7 @@ interface WebSocketMessage {
 }
 
 export default function App() {
+  const { isDark, toggleTheme } = useTheme()
   const [playerName, setPlayerName] = useState(() => {
     const saved = localStorage.getItem('playerName')
     return saved || `Player-${Math.random().toString(36).slice(2, 8)}`
@@ -30,7 +33,6 @@ export default function App() {
   const [wsConnected, setWsConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
 
-  // Fetch leaderboard
   const fetchLeaderboard = async () => {
     try {
       const res = await fetch('/api/leaderboard?limit=10')
@@ -43,7 +45,6 @@ export default function App() {
     }
   }
 
-  // Fetch player stats
   const fetchPlayerStats = async () => {
     if (!playerId) return
     try {
@@ -57,7 +58,6 @@ export default function App() {
     }
   }
 
-  // Setup WebSocket connection
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${protocol}//${window.location.host}/ws`
@@ -74,7 +74,6 @@ export default function App() {
         const message: WebSocketMessage = JSON.parse(event.data)
         
         if (message.type === 'score_update') {
-          // Refresh both leaderboard and player stats
           fetchLeaderboard()
           fetchPlayerStats()
         } else if (message.type === 'leaderboard_update') {
@@ -105,7 +104,6 @@ export default function App() {
     }
   }, [])
 
-  // Initial load
   useEffect(() => {
     const init = async () => {
       setLoading(true)
@@ -116,7 +114,6 @@ export default function App() {
     init()
   }, [playerId])
 
-  // Handle score submission
   const handleScoreSubmit = async (points: number) => {
     try {
       const res = await fetch('/api/score', {
@@ -130,7 +127,6 @@ export default function App() {
       })
       const data = await res.json()
       if (data.success) {
-        // Refresh leaderboard and stats
         await fetchLeaderboard()
         await fetchPlayerStats()
       }
@@ -145,93 +141,175 @@ export default function App() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      background: isDark 
+        ? 'linear-gradient(135deg, #0f3460 0%, #16213e 100%)'
+        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
       <header style={{
-        padding: '24px',
+        padding: '16px 24px',
         textAlign: 'center',
         color: 'white',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '16px',
       }}>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '32px' }}>🏆 Leaderboard</h1>
-        <p style={{ margin: '0 0 8px 0', fontSize: '14px', opacity: 0.9 }}>Real-Time Scoring System</p>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <h1 style={{ margin: '0 0 4px 0', fontSize: 'clamp(24px, 5vw, 32px)' }}>🏆 Leaderboard</h1>
+          <p style={{ margin: 0, fontSize: 'clamp(12px, 2vw, 14px)', opacity: 0.9 }}>Real-Time Scoring System</p>
+        </div>
+
         <div style={{
-          display: 'inline-block',
-          padding: '4px 12px',
-          background: wsConnected ? 'rgba(76, 175, 80, 0.3)' : 'rgba(244, 67, 54, 0.3)',
-          borderRadius: '20px',
-          fontSize: '12px',
-          fontWeight: 600,
-          color: wsConnected ? '#4caf50' : '#f44336',
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
         }}>
-          {wsConnected ? '🟢 Live' : '🔴 Offline'}
+          <div style={{
+            display: 'inline-block',
+            padding: '6px 12px',
+            background: wsConnected ? 'rgba(76, 175, 80, 0.3)' : 'rgba(244, 67, 54, 0.3)',
+            borderRadius: '20px',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: wsConnected ? '#4caf50' : '#f44336',
+          }}>
+            {wsConnected ? '🟢 Live' : '🔴 Offline'}
+          </div>
+
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 600,
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
         </div>
       </header>
 
       <main style={{
         maxWidth: '1200px',
         margin: '0 auto',
-        padding: '24px',
-        display: 'grid',
-        gridTemplateColumns: '1fr 300px',
-        gap: '24px',
+        padding: 'clamp(16px, 4vw, 24px)',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'clamp(16px, 4vw, 24px)',
       }}>
-        {/* Main content */}
-        <div>
-          <Leaderboard
-            players={leaderboard}
-            loading={loading}
-            playerStats={playerStats}
-          />
-        </div>
-
-        {/* Sidebar */}
-        <aside style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
+        {/* Top Row - Leaderboard and Sidebar */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(280px, 300px)',
+          gap: 'clamp(16px, 4vw, 24px)',
         }}>
-          {/* Player info */}
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '20px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-          }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700 }}>👤 Your Profile</h3>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Your name"
-              style={{
-                width: '100%',
-                padding: '8px',
-                marginBottom: '12px',
-                border: '1px solid #e0e0e0',
-                borderRadius: '6px',
-                fontSize: '13px',
-                boxSizing: 'border-box',
-              }}
+          {/* Main leaderboard */}
+          <div>
+            <Leaderboard
+              players={leaderboard}
+              loading={loading}
+              playerStats={playerStats}
             />
-            {playerStats && (
-              <div style={{
-                fontSize: '13px',
-                color: '#666',
-                marginTop: '12px',
-              }}>
-                <div style={{ marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 600 }}>Rank:</span> #{playerStats.rank}
-                </div>
-                <div>
-                  <span style={{ fontWeight: 600 }}>Score:</span> {playerStats.score}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Score form */}
-          <ScoreForm onSubmit={handleScoreSubmit} />
-        </aside>
+          {/* Sidebar */}
+          <aside style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'clamp(16px, 4vw, 24px)',
+          }}>
+            {/* Player info */}
+            <div style={{
+              background: 'var(--color-bg)',
+              borderRadius: '12px',
+              padding: 'clamp(16px, 4vw, 20px)',
+              boxShadow: '0 8px 32px var(--color-shadow)',
+            }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 700 }}>👤 Your Profile</h3>
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="Your name"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  marginBottom: '12px',
+                  border: `1px solid var(--color-border)`,
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  boxSizing: 'border-box',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                }}
+              />
+              {playerStats && (
+                <div style={{
+                  fontSize: '13px',
+                  color: 'var(--color-text-secondary)',
+                  marginTop: '12px',
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontWeight: 600 }}>Rank:</span> #{playerStats.rank}
+                  </div>
+                  <div>
+                    <span style={{ fontWeight: 600 }}>Score:</span> {playerStats.score}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Score form */}
+            <ScoreForm onSubmit={handleScoreSubmit} />
+          </aside>
+        </div>
+
+        {/* Bottom Row - Archive History */}
+        <div>
+          <ArchivedLeaderboards />
+        </div>
       </main>
+
+      {/* Responsive grid adjustment */}
+      <style>{`
+        @media (max-width: 768px) {
+          main > div:first-of-type {
+            grid-template-columns: 1fr;
+          }
+          
+          main {
+            padding: 12px !important;
+            gap: 16px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          main {
+            padding: 8px !important;
+            gap: 12px !important;
+          }
+
+          h1 {
+            font-size: 20px;
+          }
+        }
+      `}</style>
     </div>
   )
 }

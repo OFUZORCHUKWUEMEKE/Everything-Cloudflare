@@ -68,9 +68,10 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        zIndex: 1000,
       }}>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '12px' }}>
-          Loading profile...
+        <div style={{ background: 'var(--color-bg)', padding: '20px', borderRadius: '12px' }}>
+          ⏳ Loading profile...
         </div>
       </div>
     )
@@ -85,8 +86,9 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        zIndex: 1000,
       }}>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '12px' }}>
+        <div style={{ background: 'var(--color-bg)', padding: '20px', borderRadius: '12px' }}>
           Profile not found
         </div>
       </div>
@@ -107,11 +109,11 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px',
+      padding: 'clamp(12px, 4vw, 20px)',
       zIndex: 1000,
     }}>
       <div style={{
-        background: 'white',
+        background: 'var(--color-bg)',
         borderRadius: '16px',
         maxWidth: '600px',
         width: '100%',
@@ -121,17 +123,18 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
       }}>
         <div style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          padding: '32px 24px',
+          padding: 'clamp(20px, 5vw, 32px)',
           color: 'white',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'start',
+          gap: '12px',
         }}>
-          <div>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '24px' }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: '0 0 8px 0', fontSize: 'clamp(18px, 5vw, 24px)', wordBreak: 'break-word' }}>
               {profile.avatar} {profile.playerName}
             </h2>
-            <p style={{ margin: 0, opacity: 0.9, fontSize: '13px' }}>
+            <p style={{ margin: 0, opacity: 0.9, fontSize: 'clamp(11px, 2vw, 13px)' }}>
               Joined {joinDate}
             </p>
           </div>
@@ -146,55 +149,58 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
               cursor: 'pointer',
               fontSize: '18px',
               fontWeight: 600,
+              minWidth: '44px',
+              minHeight: '44px',
+              flexShrink: 0,
             }}
           >
-            X
+            ✕
           </button>
         </div>
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '16px',
-          padding: '24px',
-          borderBottom: '1px solid #e0e0e0',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+          gap: 'clamp(12px, 3vw, 16px)',
+          padding: 'clamp(16px, 4vw, 24px)',
+          borderBottom: `1px solid var(--color-border)`,
         }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#667eea' }}>
+            <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 700, color: 'var(--color-primary)' }}>
               {profile.totalScore}
             </div>
-            <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-              Total Score
+            <div style={{ fontSize: 'clamp(11px, 2vw, 12px)', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+              Total
             </div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#667eea' }}>
+            <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 700, color: 'var(--color-primary)' }}>
               {profile.gamesPlayed}
             </div>
-            <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-              Games Played
+            <div style={{ fontSize: 'clamp(11px, 2vw, 12px)', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+              Games
             </div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#667eea' }}>
+            <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 700, color: 'var(--color-primary)' }}>
               {profile.highestScore}
             </div>
-            <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-              Highest Score
+            <div style={{ fontSize: 'clamp(11px, 2vw, 12px)', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+              Highest
             </div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#667eea' }}>
+            <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 700, color: 'var(--color-primary)' }}>
               {profile.achievements.length}
             </div>
-            <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-              Achievements
+            <div style={{ fontSize: 'clamp(11px, 2vw, 12px)', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+              Badges
             </div>
           </div>
         </div>
 
-        <div style={{ padding: '24px', borderBottom: '1px solid #e0e0e0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ padding: 'clamp(16px, 4vw, 24px)', borderBottom: `1px solid var(--color-border)` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px' }}>
             <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>About</h3>
             <button
               onClick={() => {
@@ -204,13 +210,14 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#667eea',
+                color: 'var(--color-primary)',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontWeight: 600,
+                padding: '4px 8px',
               }}
             >
-              {isEditing ? 'Save' : 'Edit'}
+              {isEditing ? '💾 Save' : '✏️ Edit'}
             </button>
           </div>
           {isEditing ? (
@@ -222,18 +229,20 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
                 width: '100%',
                 minHeight: '80px',
                 padding: '12px',
-                border: '1px solid #e0e0e0',
+                border: `1px solid var(--color-border)`,
                 borderRadius: '6px',
                 fontFamily: 'inherit',
                 fontSize: '13px',
                 boxSizing: 'border-box',
+                background: 'var(--color-bg)',
+                color: 'var(--color-text)',
               }}
             />
           ) : (
             <p style={{
               margin: 0,
               fontSize: '13px',
-              color: profile.bio ? '#333' : '#999',
+              color: profile.bio ? 'var(--color-text)' : 'var(--color-text-muted)',
               fontStyle: profile.bio ? 'normal' : 'italic',
             }}>
               {profile.bio || 'No bio yet'}
@@ -241,25 +250,25 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
           )}
         </div>
 
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: 'clamp(16px, 4vw, 24px)' }}>
           <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 600 }}>
             Achievements ({profile.achievements.length})
           </h3>
           {profile.achievements.length > 0 ? (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(70px, 1fr))',
               gap: '12px',
             }}>
               {profile.achievements.map((id) => (
                 <div
                   key={id}
                   style={{
-                    background: '#f5f5f5',
-                    padding: '12px',
+                    background: 'var(--color-bg-secondary)',
+                    padding: 'clamp(12px, 3vw, 16px)',
                     borderRadius: '8px',
                     textAlign: 'center',
-                    fontSize: '24px',
+                    fontSize: 'clamp(20px, 5vw, 24px)',
                   }}
                 >
                   {id === 'first_blood' && '💧'}
@@ -271,7 +280,7 @@ export default function UserProfile({ playerId, onClose }: UserProfileProps) {
               ))}
             </div>
           ) : (
-            <p style={{ margin: 0, fontSize: '13px', color: '#999', fontStyle: 'italic' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
               No achievements yet
             </p>
           )}

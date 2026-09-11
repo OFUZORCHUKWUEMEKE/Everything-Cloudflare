@@ -134,6 +134,40 @@ app.get('/api/all-achievements', async (c) => {
   return response;
 });
 
+// GET /api/archived-leaderboards - Get all archived leaderboards
+app.get('/api/archived-leaderboards', async (c) => {
+  const stub = c.env.SCOREBOARD.get('default');
+
+  const response = await stub.fetch(
+    new Request('https://scoreboard/archived-leaderboards')
+  );
+
+  return response;
+});
+
+// GET /api/archived-leaderboard/:date - Get specific archived leaderboard
+app.get('/api/archived-leaderboard/:date', async (c) => {
+  const date = c.req.param('date');
+  const stub = c.env.SCOREBOARD.get('default');
+
+  const response = await stub.fetch(
+    new Request(`https://scoreboard/archived-leaderboard/${date}`)
+  );
+
+  return response;
+});
+
+// GET /api/reset-stats - Get reset schedule info
+app.get('/api/reset-stats', async (c) => {
+  const stub = c.env.SCOREBOARD.get('default');
+
+  const response = await stub.fetch(
+    new Request('https://scoreboard/reset-stats')
+  );
+
+  return response;
+});
+
 // POST /api/score
 app.post('/api/score', async (c) => {
   const body = await c.req.json();

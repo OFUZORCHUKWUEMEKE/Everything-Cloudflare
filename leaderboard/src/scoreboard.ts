@@ -27,11 +27,19 @@ export interface Achievement {
   requirement: number;
 }
 
+export interface ArchivedLeaderboard {
+  date: string;
+  topPlayers: PlayerScore[];
+  timestamp: number;
+}
+
 export interface LeaderboardState {
   scores: Map<string, PlayerScore>;
   profiles: Map<string, UserProfile>;
   achievements: Map<string, Achievement>;
+  archivedLeaderboards: ArchivedLeaderboard[];
   version: number;
+  lastResetTime: number;
 }
 
 export class ScoreBoard {
@@ -40,6 +48,8 @@ export class ScoreBoard {
   scores: Map<string, PlayerScore>;
   profiles: Map<string, UserProfile>;
   achievements: Map<string, Achievement>;
+  archivedLeaderboards: ArchivedLeaderboard[] = [];
+  lastResetTime: number = 0;
 
   constructor(state: DurableObjectState, env: any) {
     this.state = state;
@@ -53,6 +63,8 @@ export class ScoreBoard {
     const storedScores = await this.state.storage?.get<string>('scores');
     const storedProfiles = await this.state.storage?.get<string>('profiles');
     const storedAchievements = await this.state.storage?.get<string>('achievements');
+    const storedArchives = await this.state.storage?.get<string>('archivedLeaderboards');
+    const storedResetTime = await this.state.storage?.get<number>('lastResetTime');
 
     if (storedScores) {
       this.scores = new Map(Object.entries(JSON.parse(storedScores)));
@@ -63,6 +75,66 @@ export class ScoreBoard {
     if (storedAchievements) {
       this.achievements = new Map(Object.entries(JSON.parse(storedAchievements)));
     }
+    if (storedArchives) {
+      this.archivedLeaderboards = JSON.parse(storedArchives);
+    }
+    if (storedResetTime) {
+      this.lastResetTime = storedResetTime;
+    }
+
+    // Set up daily reset alarm if not already set
+    await this.scheduleNextReset();
+  }
+
+  // Schedule next daily reset at midnight UTC
+  private async scheduleNextReset() {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(0, 0, 0, 0);
+
+    const alarmTime = tomorrow.getTime();
+    await this.state.storage?.setAlarm(alarmTime);
+    console.log(`Alarm scheduled for ${tomorrow.toISOString()}`);
+  }
+
+  // Called automatically when alarm triggers
+  async alarm() {
+    console.log('Daily reset alarm triggered!');
+    
+    // Archive current leaderboard
+    const topPlayers = this.getTopPlayers(100); // Archive top 100
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+    this.archivedLeaderboards.push({
+      date: today,
+      topPlayers,
+      timestamp: Date.now(),
+    });
+
+    // Keep only last 30 days of archives
+    if (this.archivedLeaderboards.length > 30) {
+      this.archivedLeaderboards = this.archivedLeaderboards.slice(-30);
+    }
+
+    // Reset scores for new day
+    this.scores.clear();
+
+    // Update profiles (reset daily score, keep total)
+    this.profiles.forEach((profile) => {
+      profile.gamesPlayed = 0; // Reset daily counter
+    });
+
+    this.lastResetTime = Date.now();
+
+    // Persist everything
+    await this.persistData();
+
+    // Schedule next alarm
+    await this.scheduleNextReset();
+
+    // Broadcast reset notification to all clients
+    console.log('Leaderboard reset complete');
   }
 
   // Add or update a player's score
@@ -95,7 +167,7 @@ export class ScoreBoard {
       profile.totalScore = newScore;
       profile.gamesPlayed += 1;
       profile.highestScore = Math.max(profile.highestScore, points);
-      profile.playerName = playerName; // Update name if changed
+      profile.playerName = playerName;
     }
 
     // Check achievements
@@ -117,7 +189,7 @@ export class ScoreBoard {
         id: 'first_blood',
         name: 'First Blood',
         description: 'Submit your first score',
-        icon: '🩸',
+        icon: '💧',
         requirement: 1,
         check: () => profile.gamesPlayed >= 1,
       },
@@ -241,7 +313,32 @@ export class ScoreBoard {
     return this.achievements;
   }
 
-  // Reset all scores (admin only)
+  // Get archived leaderboards
+  getArchivedLeaderboards(): ArchivedLeaderboard[] {
+    return this.archivedLeaderboards;
+  }
+
+  // Get specific archived leaderboard
+  getArchivedLeaderboard(date: string): ArchivedLeaderboard | null {
+    return this.archivedLeaderboards.find(archive => archive.date === date) || null;
+  }
+
+  // Get reset stats
+  getResetStats() {
+    const nextResetDate = new Date();
+    nextResetDate.setUTCDate(nextResetDate.getUTCDate() + 1);
+    nextResetDate.setUTCHours(0, 0, 0, 0);
+
+    return {
+      lastResetTime: this.lastResetTime,
+      lastResetDate: new Date(this.lastResetTime).toISOString(),
+      nextResetTime: nextResetDate.getTime(),
+      nextResetDate: nextResetDate.toISOString(),
+      archivedCount: this.archivedLeaderboards.length,
+    };
+  }
+
+  // Reset all scores manually (admin)
   async resetScores(): Promise<void> {
     this.scores.clear();
     this.profiles.clear();
@@ -258,6 +355,8 @@ export class ScoreBoard {
       this.state.storage?.put('scores', JSON.stringify(scoresData)),
       this.state.storage?.put('profiles', JSON.stringify(profilesData)),
       this.state.storage?.put('achievements', JSON.stringify(achievementsData)),
+      this.state.storage?.put('archivedLeaderboards', JSON.stringify(this.archivedLeaderboards)),
+      this.state.storage?.put('lastResetTime', this.lastResetTime),
     ]);
   }
 
@@ -317,6 +416,28 @@ export class ScoreBoard {
     if (method === 'GET' && pathname === '/all-achievements') {
       const achievements = Array.from(this.getAllAchievements().values());
       return Response.json({ success: true, data: achievements });
+    }
+
+    // GET /archived-leaderboards
+    if (method === 'GET' && pathname === '/archived-leaderboards') {
+      const archives = this.getArchivedLeaderboards();
+      return Response.json({ success: true, data: archives });
+    }
+
+    // GET /archived-leaderboard/:date
+    if (method === 'GET' && pathname.startsWith('/archived-leaderboard/')) {
+      const date = pathname.split('/')[2];
+      const archive = this.getArchivedLeaderboard(date);
+      return Response.json({
+        success: true,
+        data: archive || { error: 'Archive not found' },
+      });
+    }
+
+    // GET /reset-stats
+    if (method === 'GET' && pathname === '/reset-stats') {
+      const stats = this.getResetStats();
+      return Response.json({ success: true, data: stats });
     }
 
     // POST /score
