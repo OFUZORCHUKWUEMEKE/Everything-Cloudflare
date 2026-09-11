@@ -58,162 +58,141 @@ function broadcastToClients(message: any) {
   });
 }
 
+// Get Durable Object stub
+function getScoreBoardStub(env: Env) {
+  return env.SCOREBOARD.get('default');
+}
+
 // GET /api/leaderboard
 app.get('/api/leaderboard', async (c) => {
-  const limit = c.req.query('limit') || '10';
-  const stub = c.env.SCOREBOARD.get('default');
+  const limit = parseInt(c.req.query('limit') || '10');
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request(`https://scoreboard/leaderboard?limit=${limit}`)
-  );
+  // Class RPC: Direct method call instead of HTTP fetch
+  const topPlayers = await stub.getTopPlayers(limit);
 
-  return response;
+  return c.json({ success: true, data: topPlayers });
 });
 
 // GET /api/player/:playerId
 app.get('/api/player/:playerId', async (c) => {
   const playerId = c.req.param('playerId');
-  const stub = c.env.SCOREBOARD.get('default');
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request(`https://scoreboard/player/${playerId}`)
-  );
+  // Class RPC
+  const playerStats = await stub.getPlayerStats(playerId);
 
-  return response;
+  return c.json({
+    success: true,
+    data: playerStats || { error: 'Player not found' },
+  });
 });
 
 // GET /api/profile/:playerId
 app.get('/api/profile/:playerId', async (c) => {
   const playerId = c.req.param('playerId');
-  const stub = c.env.SCOREBOARD.get('default');
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request(`https://scoreboard/profile/${playerId}`)
-  );
+  // Class RPC
+  const profile = await stub.getUserProfile(playerId);
 
-  return response;
+  return c.json({
+    success: true,
+    data: profile || { error: 'Profile not found' },
+  });
 });
 
 // PUT /api/profile/:playerId
 app.put('/api/profile/:playerId', async (c) => {
   const playerId = c.req.param('playerId');
   const body = await c.req.json();
-  const stub = c.env.SCOREBOARD.get('default');
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request(`https://scoreboard/profile/${playerId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-  );
+  // Class RPC
+  const updated = await stub.updateUserProfile(playerId, body);
 
-  return response;
+  return c.json({ success: !!updated, data: updated });
 });
 
 // GET /api/achievements/:playerId
 app.get('/api/achievements/:playerId', async (c) => {
   const playerId = c.req.param('playerId');
-  const stub = c.env.SCOREBOARD.get('default');
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request(`https://scoreboard/achievements/${playerId}`)
-  );
+  // Class RPC
+  const achievements = await stub.getPlayerAchievements(playerId);
 
-  return response;
+  return c.json({ success: true, data: achievements });
 });
 
 // GET /api/all-achievements
 app.get('/api/all-achievements', async (c) => {
-  const stub = c.env.SCOREBOARD.get('default');
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request('https://scoreboard/all-achievements')
-  );
+  // Class RPC
+  const achievements = await stub.getAllAchievements();
 
-  return response;
-});
-
-// GET /api/archived-leaderboards - Get all archived leaderboards
-app.get('/api/archived-leaderboards', async (c) => {
-  const stub = c.env.SCOREBOARD.get('default');
-
-  const response = await stub.fetch(
-    new Request('https://scoreboard/archived-leaderboards')
-  );
-
-  return response;
-});
-
-// GET /api/archived-leaderboard/:date - Get specific archived leaderboard
-app.get('/api/archived-leaderboard/:date', async (c) => {
-  const date = c.req.param('date');
-  const stub = c.env.SCOREBOARD.get('default');
-
-  const response = await stub.fetch(
-    new Request(`https://scoreboard/archived-leaderboard/${date}`)
-  );
-
-  return response;
-});
-
-// GET /api/reset-stats - Get reset schedule info
-app.get('/api/reset-stats', async (c) => {
-  const stub = c.env.SCOREBOARD.get('default');
-
-  const response = await stub.fetch(
-    new Request('https://scoreboard/reset-stats')
-  );
-
-  return response;
+  return c.json({ success: true, data: achievements });
 });
 
 // POST /api/score
 app.post('/api/score', async (c) => {
-  const body = await c.req.json();
-  const stub = c.env.SCOREBOARD.get('default');
+  const body = await c.req.json() as {
+    playerId: string;
+    playerName: string;
+    points: number;
+  };
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request('https://scoreboard/score', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-  );
+  try {
+    // Class RPC - Direct method call
+    const newScore = await stub.addScore(
+      body.playerId,
+      body.playerName,
+      body.points
+    );
 
-  const data = await response.json();
-
-  if (data.success) {
+    // Broadcast to all connected clients
     broadcastToClients({
       type: 'score_update',
-      payload: data.data,
+      payload: newScore,
       timestamp: Date.now(),
     });
-  }
 
-  return c.json(data);
+    return c.json({ success: true, data: newScore });
+  } catch (e) {
+    return c.json({ success: false, error: 'Invalid request' }, { status: 400 });
+  }
 });
 
 // GET /api/all
 app.get('/api/all', async (c) => {
-  const stub = c.env.SCOREBOARD.get('default');
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request('https://scoreboard/all')
-  );
+  // Class RPC
+  const allPlayers = await stub.getAllPlayers();
 
-  return response;
+  return c.json({ success: true, data: allPlayers });
+});
+
+// GET /api/reset-stats
+app.get('/api/reset-stats', async (c) => {
+  const stub = getScoreBoardStub(c.env);
+
+  // Class RPC
+  const stats = await stub.getResetStats();
+
+  return c.json({ success: true, data: stats });
 });
 
 // POST /api/reset
 app.post('/api/reset', async (c) => {
-  const stub = c.env.SCOREBOARD.get('default');
+  const stub = getScoreBoardStub(c.env);
 
-  const response = await stub.fetch(
-    new Request('https://scoreboard/reset', { method: 'POST' })
-  );
+  // Class RPC
+  await stub.resetScores();
 
-  return response;
+  return c.json({ success: true, message: 'Scores reset' });
 });
 
 export default {
