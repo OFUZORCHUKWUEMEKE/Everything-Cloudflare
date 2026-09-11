@@ -1,0 +1,28 @@
+{
+  "name": "leaderboard",
+  "version": "1.0.0",
+  "description": "Real-time leaderboard and scoring system using Cloudflare Durable Objects",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "dev:react": "vite",
+    "build": "tsc && wrangler build",
+    "build:react": "vite build",
+    "preview": "vite preview",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "^4.2.1",
+    "hono": "^4.13.7",
+    "typescript": "^7.0.2",
+    "vite": "^5.0.8",
+    "wrangler": "^4.129.1"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
